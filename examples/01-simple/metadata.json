@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "runtime": "8.1",
+  "created": "2000-01-01T00:00:00+00:00",
+  "modified": "2000-01-01T00:00:00+00:00",
+  "authors": [
+    "author@example.org"
+  ],
+  "title": "Sample Notebook 01 - Simple",
+  "description": "A simple notebook to demonstrate all the features",
+  "composer": {}
+}

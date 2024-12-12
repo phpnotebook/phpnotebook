@@ -1,0 +1,15 @@
+[
+  {
+    "type": "text",
+    "input": "This is a sample notebook, where I'll use PHP to count the lines in a text file"
+  },
+  {
+    "type": "file",
+    "input": "00000000-0000-0000-0000-000000000000"
+  },
+  {
+    "type": "php",
+    "input": "$data = file('file.txt'); echo count($data);",
+    "output": "ffffffff-ffff-ffff-ffff-ffffffffffff"
+  }
+]

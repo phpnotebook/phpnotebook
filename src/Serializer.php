@@ -33,7 +33,8 @@ class Serializer
 
         // Add some dummy content to the temporary folder for testing
         // TODO: Write the actual file structure in here: metadata, notebook, inputs and outputs
-        file_put_contents("$tempDir/test.txt", "This is a test file.");
+        file_put_contents("$tempDir/metadata.json", $serializer->serializeMetadata($notebook));
+        file_put_contents("$tempDir/notebook.json", $serializer->serializeNotebook($notebook, $tempDir));
 
         // Path for the temporary compressed ZIP file
         $tempZipFile = tempnam(sys_get_temp_dir(), uniqid('phpnotebook_', true)) . '.zip';
@@ -105,7 +106,7 @@ class Serializer
 
         $serializer = self::getSerializer($content->version);
 
-        return $serializer->deserialize($content);
+        return $serializer->deserialize($content, $tempDir);
 
     }
 

@@ -28,11 +28,17 @@ class Notebook
      */
     public array $sections;
 
+    /**
+     * @var array Input[]
+     */
+    public array $inputs;
+
     public function __construct()
     {
         // Initialize some sane defaults
         $this->version = '0.0.1';
         $this->sections = [];
+        $this->inputs = [];
 
         $this->metadata = new Metadata;
         $this->metadata->title = "Untitled Notebook";

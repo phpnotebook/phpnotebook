@@ -3,6 +3,7 @@
 namespace PHPNotebook\PHPNotebook\Serializers;
 
 use PHPNotebook\PHPNotebook\Notebook;
+use PHPNotebook\PHPNotebook\Types\Input;
 use PHPNotebook\PHPNotebook\Types\Output;
 use PHPNotebook\PHPNotebook\Types\Section;
 use PHPNotebook\PHPNotebook\Types\SectionType;
@@ -47,7 +48,7 @@ class v0_0_1 implements ISerializer
 
     }
 
-    public function deserialize(object $data): Notebook
+    public function deserialize(object $data, string $workingFolder): Notebook
     {
         // Validate against incoming JSON blob data
         // Then create a Notebook and populate by decoding from the file
@@ -66,12 +67,68 @@ class v0_0_1 implements ISerializer
 
         // And populate the sections
         foreach($data->sections as $section) {
-            switch($section->type) {
-                case "code":
-                case "markdown":
-                case "text": $blank->sections[] = $this->unserializeSection($section); break;
-                default: throw new \Exception("Invalid section type ". $section->type);
+
+            $newSection = new Section();
+
+            $newSectionType = SectionType::tryFrom($section->type);
+
+            if ($newSectionType == null) {
+                throw new Exception("Invaild type: {$section->type}");
             }
+
+            $newSection->type = $newSectionType;
+            $newSection->input = $section->input;
+
+            if ($newSection->type == SectionType::PHP) {
+
+                // $output should point to a file on disk, so:
+                $outputFile = $workingFolder . "/output/" . $section->output;
+
+                if (!file_exists($outputFile)) {
+                    throw new Exception("Unable to read: Required output file is missing from archive");
+                } else {
+
+                    // The output file can now be decoded and loaded into memory
+                    $output = json_decode(file_get_contents($outputFile));
+
+                    $newSection->output = new Output();
+                    $newSection->output->uuid = $output->uuid;
+                    $newSection->output->name = $output->name;
+                    $newSection->output->mime = $output->mime;
+                    $newSection->output->base64 = $output->base64;
+
+                }
+
+            }
+
+            if ($newSection->type == SectionType::File) {
+
+                // $section->input should point to a file on disk
+                $inputFile = $workingFolder . "/input/" . $section->input;
+
+                if (!file_exists($inputFile)) {
+                    throw new Exception("Unable to read: Required input file is missing from archive");
+                } else {
+
+                    // The input file will be loaded into memory here, though that might not be the smartest approach!
+                    // Better might be to write them into php://temp handles and return an array of those by uuid?
+
+                    $input = json_decode(file_get_contents($inputFile));
+                    $inputObject = new Input();
+
+                    $inputObject->uuid = $input->uuid;
+                    $inputObject->name = $input->name;
+                    $inputObject->mime = $input->mime;
+                    $inputObject->base64 = $input->base64;
+
+                    $blank->inputs[$inputObject->uuid] = $inputObject;
+
+                }
+
+            }
+
+            $blank->sections[] = $newSection;
+
         }
 
         return $blank;
@@ -109,5 +166,38 @@ class v0_0_1 implements ISerializer
         }
 
         return $blank;
+    }
+
+    public function serializeMetadata(Notebook $notebook): string
+    {
+        if ($notebook->version !== "0.0.1")
+            throw new \Exception("Invalid serializer!");
+
+        return json_encode([
+            "runtime" => $notebook->metadata->runtime,
+            "created" => $notebook->metadata->created->format(DATE_W3C),
+            "modified" => ($notebook->isChanged) ? (new \DateTime())->format(DATE_W3C) : $notebook->metadata->modified->format(DATE_W3C),
+            "authors" => $notebook->metadata->authors,
+            "composer" => $notebook->metadata->composer,
+            "title" => $notebook->metadata->title,
+            "description" => $notebook->metadata->description,
+        ], JSON_PRETTY_PRINT);
+    }
+
+    public function serializeNotebook(Notebook $notebook, string $workingFolder): string
+    {
+        // Generate out a notebook.json file, but also render out any inputs and outputs
+        $sections = [];
+
+        foreach($notebook->sections as $section) {
+            $sections[] = [
+                'type' => $section->type->value,
+                'input' => $section->input,
+                'output' => $section->input,
+            ];
+        }
+
+        return json_encode($sections, JSON_PRETTY_PRINT);
+
     }
 }

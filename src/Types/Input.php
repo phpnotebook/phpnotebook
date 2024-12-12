@@ -1,8 +1,8 @@
 <?php
 
-namespace PHPNotebook\PHPNotebook;
+namespace PHPNotebook\PHPNotebook\Types;
 
-class Output
+class Input
 {
     public string $uuid;
     public string $name;

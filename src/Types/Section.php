@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPNotebook\PHPNotebook;
+namespace PHPNotebook\PHPNotebook\Types;
 
 class Section
 {

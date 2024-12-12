@@ -48,25 +48,28 @@ class v0_0_1 implements ISerializer
 
     }
 
-    public function deserialize(object $data, string $workingFolder): Notebook
+    public function deserialize(string $workingFolder): Notebook
     {
         // Validate against incoming JSON blob data
         // Then create a Notebook and populate by decoding from the file
         $blank = new Notebook();
 
+        $metadata = json_decode(file_get_contents($workingFolder . "/metadata.json"));
+        $notebook = json_decode(file_get_contents($workingFolder . "/notebook.json"));
+
         // Write basic and supporting information
-        $blank->version = $data->version;
+        $blank->version = $metadata->version;
 
         // Deserialize the metadata
-        $blank->metadata->runtime = $data->metadata->runtime;
-        $blank->metadata->created = \DateTime::createFromFormat(DATE_W3C, $data->metadata->created);
-        $blank->metadata->modified = \DateTime::createFromFormat(DATE_W3C, $data->metadata->modified);
-        $blank->metadata->authors = $data->metadata->authors;
-        $blank->metadata->title = $data->metadata->title;
-        $blank->metadata->description = $data->metadata->description;
+        $blank->metadata->runtime = $metadata->runtime;
+        $blank->metadata->created = \DateTime::createFromFormat(DATE_W3C, $metadata->created);
+        $blank->metadata->modified = \DateTime::createFromFormat(DATE_W3C, $metadata->modified);
+        $blank->metadata->authors = $metadata->authors;
+        $blank->metadata->title = $metadata->title;
+        $blank->metadata->description = $metadata->description;
 
         // And populate the sections
-        foreach($data->sections as $section) {
+        foreach($notebook as $section) {
 
             $newSection = new Section();
 
@@ -174,6 +177,7 @@ class v0_0_1 implements ISerializer
             throw new \Exception("Invalid serializer!");
 
         return json_encode([
+            "version" => $notebook->version,
             "runtime" => $notebook->metadata->runtime,
             "created" => $notebook->metadata->created->format(DATE_W3C),
             "modified" => ($notebook->isChanged) ? (new \DateTime())->format(DATE_W3C) : $notebook->metadata->modified->format(DATE_W3C),
@@ -190,11 +194,34 @@ class v0_0_1 implements ISerializer
         $sections = [];
 
         foreach($notebook->sections as $section) {
-            $sections[] = [
+
+            $newSection = [
                 'type' => $section->type->value,
-                'input' => $section->input,
-                'output' => $section->input,
+                'input' => $section->input, // Always a string
             ];
+
+            if ($section->type == SectionType::File) {
+
+                // Ensure we write the input out to the file
+                if (!file_exists($workingFolder . "/input/")) {
+                    mkdir($workingFolder . "/input/");
+                }
+
+                file_put_contents($workingFolder . "/input/" . $section->input, json_encode($notebook->inputs[$section->input], JSON_PRETTY_PRINT));
+            }
+
+            if ($section->type == SectionType::PHP) {
+
+                // Write the output to the output file
+                if (!file_exists($workingFolder . "/output/")) {
+                    mkdir($workingFolder . "/output/");
+                }
+
+                file_put_contents($workingFolder . "/output/" . $section->output->uuid, json_encode($section->output, JSON_PRETTY_PRINT));
+
+            }
+
+            $sections[] = $newSection;
         }
 
         return json_encode($sections, JSON_PRETTY_PRINT);

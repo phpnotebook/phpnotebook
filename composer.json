@@ -16,7 +16,10 @@
     "autoload": {
         "psr-4": {
             "PHPNotebook\\PHPNotebook\\": "src/"
-        }
+        },
+        "files": [
+            "./src/functions.php"
+        ]
     },
     "authors": [
         {

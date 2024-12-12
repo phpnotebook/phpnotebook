@@ -102,11 +102,11 @@ class Serializer
             throw new \Exception("Invalid file. Failed to extract while reading.");
         }
 
-        $content = self::readContent($tempDir . "metadata.json");
+        $content = self::readContent($tempDir . "/metadata.json");
 
         $serializer = self::getSerializer($content->version);
 
-        return $serializer->deserialize($content, $tempDir);
+        return $serializer->deserialize($tempDir);
 
     }
 

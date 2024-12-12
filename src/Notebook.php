@@ -2,6 +2,7 @@
 
 namespace PHPNotebook\PHPNotebook;
 
+use PHPNotebook\PHPNotebook\Types\Input;
 use PHPNotebook\PHPNotebook\Types\Metadata;
 use PHPNotebook\PHPNotebook\Types\Section;
 
@@ -48,5 +49,18 @@ class Notebook
         $this->metadata->modified = new \DateTime();
         $this->metadata->authors = [];
         $this->metadata->composer = [];
+    }
+
+    public function addFile(string $path)
+    {
+        $uuid = phpnotebook_generate_uuid();
+
+        $this->inputs[$uuid] = new Input();
+
+        $this->inputs[$uuid]->uuid = $uuid;
+        $this->inputs[$uuid]->mime = mime_content_type($path);
+        $this->inputs[$uuid]->name = basename($path);
+        $this->inputs[$uuid]->base64 = base64_encode(file_get_contents($path));
+        
     }
 }

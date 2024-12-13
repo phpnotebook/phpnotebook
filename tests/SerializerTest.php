@@ -3,7 +3,9 @@
 namespace PHPNotebook\PHPNotebook\Tests;
 
 use PHPNotebook\PHPNotebook\Notebook;
+use PHPNotebook\PHPNotebook\Runner;
 use PHPNotebook\PHPNotebook\Serializer;
+use PHPNotebook\PHPNotebook\Types\SectionType;
 use PHPUnit\Framework\TestCase;
 
 class SerializerTest extends TestCase
@@ -51,7 +53,7 @@ class SerializerTest extends TestCase
 
         Serializer::write($notebook, $tempFileName);
 
-        // This should now result in a ZIP archive at $tempFileName which includes an inputs/ file!
+        // This should now result in a ZIP archive at $tempFileName which includes an input/ folder!
 
         $tempExtractDir = sys_get_temp_dir() . '/phpnotebook_extract_' . uniqid();
 
@@ -65,7 +67,7 @@ class SerializerTest extends TestCase
             $this->fail("Failed to open the archive: $tempFileName");
         }
 
-        $inputsDir = $tempExtractDir . '/inputs';
+        $inputsDir = $tempExtractDir . '/input';
         $this->assertDirectoryExists($inputsDir);
 
         // Check if the inputs/ directory contains exactly one file
@@ -74,7 +76,7 @@ class SerializerTest extends TestCase
         $this->assertCount(1, $inputFiles);
 
         // Check that the content of this file is a JSON payload with decodeable bytes
-        $inputFileContent = file_get_contents($inputsDir . '/' . $inputFiles[0]);
+        $inputFileContent = file_get_contents($inputsDir . '/' . array_values($inputFiles)[0]);
         $inputFileObject = json_decode($inputFileContent);
 
         $this->assertEquals($randomBytes, base64_decode($inputFileObject->base64));
@@ -83,6 +85,28 @@ class SerializerTest extends TestCase
         array_map('unlink', glob($inputsDir . '/*'));
         rmdir($inputsDir);
         rmdir($tempExtractDir);
+
+    }
+
+    public function test_notebook_runner()
+    {
+        $notebook = new Notebook();
+
+        // Add a code section that will produce output to a file, then verify that output shows up
+        $randomString = bin2hex(random_bytes(16));
+
+        $notebook->addSection(SectionType::PHP, "echo '".$randomString."';");
+
+        // Running the notebook should now cause the output to be written and returned
+
+        $tempFileName = tempnam(sys_get_temp_dir(), 'phpnotebook_') . '.phpnb';
+        Serializer::write($notebook, $tempFileName);
+
+        $this->assertFileExists($tempFileName);
+
+        $result = Runner::run($notebook);
+
+        $this->assertEquals($result->stdout, $randomString);
 
     }
 }

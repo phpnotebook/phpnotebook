@@ -210,7 +210,7 @@ class v0_0_1 implements ISerializer
                 file_put_contents($workingFolder . "/input/" . $section->input, json_encode($notebook->inputs[$section->input], JSON_PRETTY_PRINT));
             }
 
-            if ($section->type == SectionType::PHP) {
+            if ($section->type == SectionType::PHP && isset($section->output)) {
 
                 // Write the output to the output file
                 if (!file_exists($workingFolder . "/output/")) {

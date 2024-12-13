@@ -5,6 +5,7 @@ namespace PHPNotebook\PHPNotebook;
 use PHPNotebook\PHPNotebook\Types\Input;
 use PHPNotebook\PHPNotebook\Types\Metadata;
 use PHPNotebook\PHPNotebook\Types\Section;
+use PHPNotebook\PHPNotebook\Types\SectionType;
 
 class Notebook
 {
@@ -51,16 +52,38 @@ class Notebook
         $this->metadata->composer = [];
     }
 
-    public function addFile(string $path)
+    public function addFile(string $path, string $name = null)
     {
+        // Attaching a file counts as a "section", since you can drag/drop/upload it in the editor
+        // and make changes to the metadata there, so:
         $uuid = phpnotebook_generate_uuid();
 
-        $this->inputs[$uuid] = new Input();
+        // Create a section to load the file
+        $section = new Section();
+        $section->type = SectionType::File;
+        $section->input = $uuid;
+        $this->sections[] = $section;
 
+        // And load the input straight into memory for later serialization to disk
+        $this->inputs[$uuid] = new Input();
         $this->inputs[$uuid]->uuid = $uuid;
         $this->inputs[$uuid]->mime = mime_content_type($path);
-        $this->inputs[$uuid]->name = basename($path);
+        $this->inputs[$uuid]->name = $name ?? basename($path);
         $this->inputs[$uuid]->base64 = base64_encode(file_get_contents($path));
         
+    }
+
+    public function addSection(SectionType $type, string $input)
+    {
+        if ($type == SectionType::File) {
+            throw new \Exception("Incorrect method! Use addFile() to add files");
+        }
+
+        $newSection = new Section();
+        $newSection->type = $type;
+        $newSection->input = $input;
+
+        $this->sections[] = $newSection;
+
     }
 }

@@ -60,6 +60,7 @@ class Notebook
 
         // Create a section to load the file
         $section = new Section();
+        $section->uuid = phpnotebook_generate_uuid();
         $section->type = SectionType::File;
         $section->input = $uuid;
         $this->sections[] = $section;
@@ -80,6 +81,7 @@ class Notebook
         }
 
         $newSection = new Section();
+        $newSection->uuid = phpnotebook_generate_uuid();
         $newSection->type = $type;
         $newSection->input = $input;
 

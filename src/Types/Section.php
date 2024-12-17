@@ -5,6 +5,11 @@ namespace PHPNotebook\PHPNotebook\Types;
 class Section
 {
     /**
+     * @var string Unique identifier for this section, used in the runtime
+     */
+    public string $uuid;
+
+    /**
      * @var SectionType The type of section (changes how the processor handles it)
      */
     public SectionType $type;

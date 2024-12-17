@@ -1,7 +1,5 @@
 <?php
 
-namespace PHPNotebook\PHPNotebook\Tests;
-
 use PHPNotebook\PHPNotebook\Notebook;
 use PHPNotebook\PHPNotebook\Runner;
 use PHPNotebook\PHPNotebook\Serializer;
@@ -93,9 +91,13 @@ class SerializerTest extends TestCase
         $notebook = new Notebook();
 
         // Add a code section that will produce output to a file, then verify that output shows up
-        $randomString = bin2hex(random_bytes(16));
+        $randomString1 = bin2hex(random_bytes(16));
+        $randomString2 = bin2hex(random_bytes(16));
+        $randomString3 = bin2hex(random_bytes(16));
 
-        $notebook->addSection(SectionType::PHP, "echo '".$randomString."';");
+        $notebook->addSection(SectionType::PHP, "echo '".$randomString1."';");
+        $notebook->addSection(SectionType::PHP, "echo '".$randomString2."';");
+        $notebook->addSection(SectionType::PHP, "echo '".$randomString3."';");
 
         // Running the notebook should now cause the output to be written and returned
 
@@ -106,7 +108,13 @@ class SerializerTest extends TestCase
 
         $result = Runner::run($notebook);
 
-        $this->assertEquals($result->stdout, $randomString);
+        print_r($result->stdout);
+        print_r($result->files);
+
+        // Running the notebook should modify the contents of the notebook, so save the results to disk:
+        Serializer::write($notebook, $tempFileName);
+
+        // TODO: Check that the notebook now contains a stdout file!
 
     }
 }

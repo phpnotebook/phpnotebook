@@ -2,6 +2,7 @@
 
 namespace PHPNotebook\PHPNotebook;
 
+use PHPNotebook\PHPNotebook\Types\Output;
 use PHPNotebook\PHPNotebook\Types\Result;
 use PHPNotebook\PHPNotebook\Types\SectionType;
 
@@ -40,9 +41,21 @@ class Runner
 
             $result = new Result();
 
-            // Processing the STDOUT: We'll do an echo SECTIONSTART=UUID\nstuff\nSECTIONEND=UUID\n kinda thing
-            $result->stdout = trim(implode("\n", $output));
-            $result->files = array_values(array_diff(scandir($tempDir), ['.', '..', 'vendor', 'run.php']));
+            $stdout = self::extractSections(implode("\n", $output));
+            $result->stdout = $stdout;
+
+            foreach($stdout as $uuid => $out) {
+                foreach ($notebook->sections as $section) {
+                    if ($section->uuid == $uuid) {
+                        $section->output = Output::stdout($out);
+                    }
+                }
+            }
+
+            // Every stdout needs to be attached back to the given section as an output in the $notebook, so that
+            // it gets saved in memory for later serialization
+
+            $files = array_values(array_diff(scandir($tempDir), ['.', '..', 'vendor', 'run.php']));
 
             // TODO: Might need to read the files into the $notebook object
             self::cleanup($tempDir);
@@ -52,6 +65,24 @@ class Runner
         }
     }
 
+    private static function extractSections(string $stdout) : array
+    {
+        $result = [];
+
+        // Match sections using regex
+        $pattern = '/__SECTIONBOUNDARY=([\w-]+)\n(.*?)\n__SECTIONBOUNDARY=\1/s';
+
+        if (preg_match_all($pattern, $stdout, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $uuid = $match[1];
+                // Trim to remove any extra whitespace or newlines
+                $content = trim($match[2]);
+                $result[$uuid] = $content;
+            }
+        }
+
+        return $result;
+    }
 
     private static function cleanup(string $folderPath): void
     {
@@ -82,7 +113,9 @@ class Runner
 
         foreach($notebook->sections as $section) {
             if ($section->type == SectionType::PHP) {
-                $script .= $section->input . "\n";
+                $script .= PHP_EOL . 'echo "' . PHP_EOL . '__SECTIONBOUNDARY=' . $section->uuid . PHP_EOL . '";' . PHP_EOL;
+                $script .= $section->input . PHP_EOL;
+                $script .= PHP_EOL . 'echo "' . PHP_EOL . '__SECTIONBOUNDARY=' . $section->uuid . PHP_EOL . '";' . PHP_EOL;
             }
         }
 
